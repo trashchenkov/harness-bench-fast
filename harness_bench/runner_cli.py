@@ -462,7 +462,7 @@ def run_all_cli(
     if concurrency <= 1:
         results: list[TaskRun] = []
         for task in targets:
-            print(f"→ {task.id}: {task.name}")
+            print(f"[START] {task.id}: {task.name}")
             run = run_task_cli(
                 task,
                 cli_command=cli_command,

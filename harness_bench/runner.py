@@ -198,7 +198,7 @@ def run_all(
     """Run a subset (or all) of the benchmark tasks.
 
     When `concurrency == 1` (default) tasks run sequentially and progress is
-    printed in two lines per task (`→ task_id: name` then `[PASS] ...`).
+    printed in two lines per task (`[START] task_id: name` then `[PASS] ...`).
     When `concurrency > 1` tasks run in a `ThreadPoolExecutor` (each task is
     fully isolated in its own `TemporaryDirectory`, so no synchronization is
     required around the workspace); progress is printed as a single line per
@@ -213,7 +213,7 @@ def run_all(
     if concurrency <= 1:
         results: list[TaskRun] = []
         for task in targets:
-            print(f"→ {task.id}: {task.name}")
+            print(f"[START] {task.id}: {task.name}")
             run = run_task(task, keep_workspace=keep_workspace, recursion_limit=recursion_limit)
             results.append(run)
             status = "PASS" if run.passed else "FAIL"

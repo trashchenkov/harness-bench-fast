@@ -128,7 +128,7 @@ def run_all(
     if concurrency <= 1:
         results: list[TaskRun] = []
         for task in targets:
-            print(f"→ {task.id}: {task.name}")
+            print(f"[START] {task.id}: {task.name}")
             run = run_task(task, keep_workspace=keep_workspace, recursion_limit=recursion_limit)
             results.append(run)
             status = "PASS" if run.passed else "FAIL"
