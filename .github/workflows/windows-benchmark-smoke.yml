@@ -68,8 +68,13 @@ jobs:
       OPENROUTER_BASE_URL: ${{ vars.OPENROUTER_BASE_URL }}
 
     steps:
-      - name: Checkout
+      - name: Checkout feature branch
         uses: actions/checkout@v4
+        with:
+          # This workflow is exposed on fork/main only so GitHub shows the
+          # manual Run workflow button. The benchmark code under test lives on
+          # the PR branch.
+          ref: hermes-windows-bench-smoke
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
