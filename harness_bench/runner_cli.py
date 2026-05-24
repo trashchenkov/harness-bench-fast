@@ -149,6 +149,7 @@ def _run_cli_subprocess(
         stdin=subprocess.DEVNULL,
         text=True,
         encoding="utf-8",
+        errors="replace",
         env=env,
         creationflags=creationflags,
         start_new_session=start_new_session,

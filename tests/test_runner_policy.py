@@ -11,6 +11,7 @@ from langgraph.errors import GraphRecursionError
 from harness_bench import __main__ as bench_main
 from harness_bench.core import Task, VerifyResult
 from harness_bench.runner import TaskRun, run_task
+from harness_bench.verifiers import file_text_equals
 
 
 class _FakeAgent:
@@ -105,6 +106,63 @@ def test_cli_timeout_kills_windows_process_tree(monkeypatch, tmp_path: Path) -> 
         )
 
     assert taskkill_calls == [["taskkill", "/F", "/T", "/PID", "4242"]]
+
+
+def test_cli_subprocess_reader_replaces_invalid_utf8(monkeypatch, tmp_path: Path) -> None:
+    from harness_bench import runner_cli
+
+    popen_kwargs: dict[str, object] = {}
+
+    class _CompletedProcess:
+        pid = 4242
+        returncode = 0
+
+        def communicate(self, timeout: int | None = None) -> tuple[str, str]:
+            return "ok", ""
+
+    def _fake_popen(*_args: object, **kwargs: object) -> _CompletedProcess:
+        popen_kwargs.update(kwargs)
+        return _CompletedProcess()
+
+    monkeypatch.setattr(runner_cli.subprocess, "Popen", _fake_popen)
+
+    result = runner_cli._run_cli_subprocess(
+        ["fake-cli"],
+        cwd=tmp_path,
+        timeout=600,
+        env=None,
+    )
+
+    assert result.stdout == "ok"
+    assert popen_kwargs["encoding"] == "utf-8"
+    assert popen_kwargs["errors"] == "replace"
+
+
+def test_text_verifier_reports_non_utf8_files_without_traceback(tmp_path: Path) -> None:
+    (tmp_path / "out.txt").write_bytes(b"\xff\xfe\x00")
+
+    result = file_text_equals("out.txt", "expected")(tmp_path)
+
+    assert result.passed is False
+    assert "out.txt is not valid UTF-8" in result.message
+
+
+def test_task_verify_reports_decode_errors_as_clean_failures(tmp_path: Path) -> None:
+    (tmp_path / "out.txt").write_bytes(b"\xff\xfe\x00")
+
+    task = Task(
+        id="task_fake_decode",
+        name="decode",
+        prompt="decode",
+        verifier=lambda ws: VerifyResult(
+            True, (ws / "out.txt").read_text(encoding="utf-8")
+        ),
+    )
+
+    result = task.verify(tmp_path)
+
+    assert result.passed is False
+    assert result.message.startswith("verifier failed to decode text as UTF-8:")
 
 
 def test_cli_temp_workspace_cleanup_failure_does_not_abort_task(
